@@ -29,4 +29,5 @@ android {
 dependencies {
     implementation 'dev.ffmpegkit-maintained:yt-dlp-android:2.0.2'
     implementation 'dev.ffmpegkit-maintained:yt-dlp-android-compat:2.0.2'
+    
 }
