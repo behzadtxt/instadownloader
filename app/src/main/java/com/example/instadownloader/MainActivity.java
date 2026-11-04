@@ -1,3 +1,4 @@
+
 package com.example.instadownloader;
 
 import android.app.Activity;
@@ -105,7 +106,7 @@ public class MainActivity extends Activity {
 
         downloadButton.setOnClickListener(v -> startDownload());
         executor.execute(() -> {
-            try { YoutubeDL.getInstance().init(getApplicationContext()); }
+            try {YtDlp.init(getApplicationContext()); }
             catch (Exception e) { runOnUiThread(() -> status.setText("راه‌اندازی موتور دانلود ناموفق بود: " + e.getMessage())); }
         });
     }
