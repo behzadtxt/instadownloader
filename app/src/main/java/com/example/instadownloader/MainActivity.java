@@ -111,33 +111,65 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void startDownload() {
-        final String url = urlInput.getText().toString().trim();
-        if (!(url.startsWith("https://www.instagram.com/") || url.startsWith("https://instagram.com/"))) {
-            status.setText("لطفاً یک لینک معتبر اینستاگرام وارد کن.");
-            return;
-        }
-        downloadButton.setEnabled(false);
-        status.setText("در حال آماده‌سازی دانلود...");
-        executor.execute(() -> {
-            try {
-                File folder = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "Instagram");
-                if (!folder.exists() && !folder.mkdirs()) throw new Exception("ساخت پوشه دانلود ممکن نشد");
-                String output = new File(folder, "%(title).80s_%(id)s.%(ext)s").getAbsolutePath();
-                YoutubeDLRequest request = new YoutubeDLRequest(url);
-                request.addOption("-o", output);
-                request.addOption("-f", "best[ext=mp4]/best");
-                request.addOption("--no-playlist");
-                YoutubeDL.getInstance().execute(request);
-                runOnUiThread(() -> status.setText("دانلود تمام شد. مسیر ذخیره: Android/data/com.example.instadownloader/files/Download/Instagram"));
-            } catch (Exception e) {
-                String msg = e.getMessage() == null ? "خطای نامشخص" : e.getMessage();
-                runOnUiThread(() -> status.setText("دانلود ناموفق بود: " + msg + "\nممکن است اینستاگرام ورود یا دسترسی دیگری بخواهد."));
-            } finally {
-                runOnUiThread(() -> downloadButton.setEnabled(true));
-            }
-        });
+  
+private void startDownload() {
+    final String url = urlInput.getText().toString().trim();
+
+    if (!(url.startsWith("https://www.instagram.com/") ||
+          url.startsWith("https://instagram.com/"))) {
+        status.setText("لطفاً یک لینک معتبر اینستاگرام وارد کن.");
+        return;
     }
+
+    downloadButton.setEnabled(false);
+    status.setText("در حال آماده‌سازی دانلود...");
+
+    executor.execute(() -> {
+        try {
+            File folder = new File(
+                getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                "Instagram"
+            );
+
+            if (!folder.exists() && !folder.mkdirs()) {
+                throw new Exception("ساخت پوشه دانلود ممکن نشد");
+            }
+
+            String output = new File(
+                folder,
+                "%(title).80s_%(id)s.%(ext)s"
+            ).getAbsolutePath();
+
+            YtDlpRequest request = new YtDlpRequest(url)
+                .setOutputTemplate(output)
+                .addOption("-f", "best[ext=mp4]/best")
+                .addOption("--no-playlist");
+
+            YtDlp.executeAsync(request, (progress, eta, line) -> {
+                runOnUiThread(() ->
+                    status.setText("در حال دانلود: " + progress + "%")
+                );
+            });
+
+            runOnUiThread(() ->
+                status.setText("درخواست دانلود ارسال شد.")
+            );
+
+        } catch (Exception e) {
+            String msg = e.getMessage() == null
+                ? "خطای نامشخص"
+                : e.getMessage();
+
+            runOnUiThread(() ->
+                status.setText("دانلود ناموفق بود: " + msg)
+            );
+        } finally {
+            runOnUiThread(() ->
+                downloadButton.setEnabled(true)
+            );
+        }
+    });
+}
 
     @Override protected void onDestroy() {
         executor.shutdown();
