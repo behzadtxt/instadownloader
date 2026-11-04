@@ -18,8 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 // The compatibility artifact keeps the familiar YoutubeDL Java API.
-import com.yausername.youtubedl_android.YoutubeDL;
-import com.yausername.youtubedl_android.YoutubeDLRequest;
+import dev.ffmpegkit_maintained.ytdlp.YtDlp;
+import dev.ffmpegkit_maintained.ytdlp.YtDlpRequest;
 
 public class MainActivity extends Activity {
     private EditText urlInput;
