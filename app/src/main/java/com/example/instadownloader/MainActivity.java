@@ -1,6 +1,6 @@
 
 package com.example.instadownloader;
-
+import dev.ffmpegkit_maintained.ytdlp.YtDlpResponse;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Environment;
@@ -112,6 +112,7 @@ public class MainActivity extends Activity {
     }
 
   
+
 private void startDownload() {
     final String url = urlInput.getText().toString().trim();
 
@@ -126,13 +127,18 @@ private void startDownload() {
 
     executor.execute(() -> {
         try {
-            File folder = new File(
-                getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                "Instagram"
+            File baseFolder = getExternalFilesDir(
+                Environment.DIRECTORY_DOWNLOADS
             );
 
+            if (baseFolder == null) {
+                throw new Exception("مسیر ذخیره‌سازی در دسترس نیست");
+            }
+
+            File folder = new File(baseFolder, "Instagram");
+
             if (!folder.exists() && !folder.mkdirs()) {
-                throw new Exception("ساخت پوشه دانلود ممکن نشد");
+                throw new Exception("ساخت پوشه دانلود ناموفق بود");
             }
 
             String output = new File(
@@ -145,15 +151,40 @@ private void startDownload() {
                 .addOption("-f", "best[ext=mp4]/best")
                 .addOption("--no-playlist");
 
-            YtDlp.executeAsync(request, (progress, eta, line) -> {
-                runOnUiThread(() ->
-                    status.setText("در حال دانلود: " + progress + "%")
-                );
-            });
-
-            runOnUiThread(() ->
-                status.setText("درخواست دانلود ارسال شد.")
+            // اجرای واقعی دانلود و انتظار تا پایان آن
+            YtDlpResponse response = YtDlp.execute(
+                request,
+                (progress, eta, line) -> {
+                    runOnUiThread(() ->
+                        status.setText(
+                            "در حال دانلود: " +
+                            String.format("%.1f", progress) +
+                            "%\nزمان باقی‌مانده: " + eta + " ثانیه"
+                        )
+                    );
+                }
             );
+
+            if (response.isSuccess()) {
+                runOnUiThread(() ->
+                    status.setText(
+                        "دانلود با موفقیت انجام شد.\n" +
+                        "مسیر ذخیره:\n" + folder.getAbsolutePath()
+                    )
+                );
+            } else {
+                String error = response.getErrorOutput();
+
+                if (error == null || error.isEmpty()) {
+                    error = "کد خطا: " + response.getExitCode();
+                }
+
+                final String finalError = error;
+
+                runOnUiThread(() ->
+                    status.setText("دانلود ناموفق بود:\n" + finalError)
+                );
+            }
 
         } catch (Exception e) {
             String msg = e.getMessage() == null
@@ -161,8 +192,9 @@ private void startDownload() {
                 : e.getMessage();
 
             runOnUiThread(() ->
-                status.setText("دانلود ناموفق بود: " + msg)
+                status.setText("خطای دانلود:\n" + msg)
             );
+
         } finally {
             runOnUiThread(() ->
                 downloadButton.setEnabled(true)
